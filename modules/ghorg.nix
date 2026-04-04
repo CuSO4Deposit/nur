@@ -8,19 +8,21 @@
 let
   cfg = config.services.ghorg;
   yaml = pkgs.formats.yaml { };
+
   hasInlineConfig =
     job:
     job.rawSettings != { }
     || builtins.any (value: value != null) [
       job.settings.scmType
-      job.settings.hostname
+      job.settings.sshHostname
       job.settings.baseUrl
       job.settings.cloneProtocol
+      job.settings.outputDir
       job.settings.concurrency
+      job.settings.preserveScmHostname
       job.settings.preserveDir
       job.settings.skipArchived
       job.settings.skipForks
-      job.settings.includeSubgroups
       job.settings.branch
       job.settings.cloneToPath
     ];
@@ -30,20 +32,27 @@ let
     let
       typedSettings =
         lib.optionalAttrs (job.settings.scmType != null) { scm_type = job.settings.scmType; }
-        // lib.optionalAttrs (job.settings.hostname != null) { hostname = job.settings.hostname; }
-        // lib.optionalAttrs (job.settings.baseUrl != null) { base_url = job.settings.baseUrl; }
+        // lib.optionalAttrs (job.settings.sshHostname != null) {
+          ssh_hostname = job.settings.sshHostname;
+        }
+        // lib.optionalAttrs (job.settings.baseUrl != null) {
+          scm_base_url = job.settings.baseUrl;
+        }
         // lib.optionalAttrs (job.settings.cloneProtocol != null) {
           clone_protocol = job.settings.cloneProtocol;
         }
+        // lib.optionalAttrs (job.settings.outputDir != null) { output_dir = job.settings.outputDir; }
         // lib.optionalAttrs (job.settings.concurrency != null) { concurrency = job.settings.concurrency; }
-        // lib.optionalAttrs (job.settings.preserveDir != null) { preserve_dir = job.settings.preserveDir; }
+        // lib.optionalAttrs (job.settings.preserveScmHostname != null) {
+          preserve_scm_hostname = job.settings.preserveScmHostname;
+        }
+        // lib.optionalAttrs (job.settings.preserveDir != null) {
+          preserve_directory_structure = job.settings.preserveDir;
+        }
         // lib.optionalAttrs (job.settings.skipArchived != null) {
           skip_archived = job.settings.skipArchived;
         }
         // lib.optionalAttrs (job.settings.skipForks != null) { skip_forks = job.settings.skipForks; }
-        // lib.optionalAttrs (job.settings.includeSubgroups != null) {
-          include_subgroups = job.settings.includeSubgroups;
-        }
         // lib.optionalAttrs (job.settings.branch != null) { branch = job.settings.branch; }
         // {
           absolute_path_to_clone_to =
@@ -227,18 +236,18 @@ in
                   description = "Maps to `scm_type` in `conf.yaml`.";
                 };
 
-                hostname = lib.mkOption {
+                sshHostname = lib.mkOption {
                   type = lib.types.nullOr lib.types.str;
                   default = null;
-                  example = "git.example.com";
-                  description = "Maps to `hostname` in `conf.yaml`.";
+                  example = "github.com";
+                  description = "Maps to `ssh_hostname` in `conf.yaml`.";
                 };
 
                 baseUrl = lib.mkOption {
                   type = lib.types.nullOr lib.types.str;
                   default = null;
                   example = "https://gitlab.example.com";
-                  description = "Maps to `base_url` in `conf.yaml`.";
+                  description = "Maps to `scm_base_url` in `conf.yaml`.";
                 };
 
                 cloneProtocol = lib.mkOption {
@@ -248,16 +257,29 @@ in
                   description = "Maps to `clone_protocol` in `conf.yaml`.";
                 };
 
+                outputDir = lib.mkOption {
+                  type = lib.types.nullOr lib.types.str;
+                  default = null;
+                  example = "github";
+                  description = "Maps to `output_dir` in `conf.yaml`.";
+                };
+
                 concurrency = lib.mkOption {
                   type = lib.types.nullOr lib.types.ints.positive;
                   default = null;
                   description = "Maps to `concurrency` in `conf.yaml`.";
                 };
 
+                preserveScmHostname = lib.mkOption {
+                  type = lib.types.nullOr lib.types.bool;
+                  default = null;
+                  description = "Maps to `preserve_scm_hostname` in `conf.yaml`.";
+                };
+
                 preserveDir = lib.mkOption {
                   type = lib.types.nullOr lib.types.bool;
                   default = null;
-                  description = "Maps to `preserve_dir` in `conf.yaml`.";
+                  description = "Maps to `preserve_directory_structure` in `conf.yaml`.";
                 };
 
                 skipArchived = lib.mkOption {
@@ -270,12 +292,6 @@ in
                   type = lib.types.nullOr lib.types.bool;
                   default = null;
                   description = "Maps to `skip_forks` in `conf.yaml`.";
-                };
-
-                includeSubgroups = lib.mkOption {
-                  type = lib.types.nullOr lib.types.bool;
-                  default = null;
-                  description = "Maps to `include_subgroups` in `conf.yaml`.";
                 };
 
                 branch = lib.mkOption {
