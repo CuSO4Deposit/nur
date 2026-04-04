@@ -70,36 +70,25 @@ let
 
   jobCommand =
     name: job:
-    let
-      commandArgs =
-        job.args
-        ++ [
-          "--config"
-          (jobConfigFile name job)
-        ]
-        ++ job.extraArgs;
-      commandString = lib.escapeShellArgs ([ (lib.getExe cfg.package) ] ++ commandArgs);
-      sourceEnv = lib.optionalString (job.environmentFile != null) ''
-        set -a
-        . ${lib.escapeShellArg job.environmentFile}
-        set +a
-      '';
-    in
-    pkgs.writeShellScript "ghorg-job-${name}" ''
-      set -eu
-      export HOME=${lib.escapeShellArg cfg.dataDir}
-      ${sourceEnv}
-      exec ${commandString}
-    '';
+    lib.escapeShellArgs (
+      [ "ghorg" ]
+      ++ job.args
+      ++ [
+        "--config"
+        (jobConfigFile name job)
+      ]
+      ++ lib.optionals (job.tokenFile != null) [
+        "--token"
+        job.tokenFile
+      ]
+      ++ job.extraArgs
+    );
 
   recloneConfig = yaml.generate "ghorg-reclone.yaml" (
     lib.mapAttrs (
       name: job:
       {
-        cmd = lib.escapeShellArgs [
-          pkgs.runtimeShell
-          (jobCommand name job)
-        ];
+        cmd = jobCommand name job;
       }
       // lib.optionalAttrs (job.description != null) { description = job.description; }
       // lib.optionalAttrs (job.postExecScript != null) {
@@ -164,6 +153,16 @@ in
       '';
     };
 
+    environmentFile = lib.mkOption {
+      type = lib.types.nullOr lib.types.str;
+      default = null;
+      description = ''
+        Optional shared environment file for the ghorg reclone service. This is
+        appropriate for GHORG_* variables that may be reused across multiple
+        jobs.
+      '';
+    };
+
     jobs = lib.mkOption {
       type = lib.types.attrsOf (
         lib.types.submodule (
@@ -221,13 +220,14 @@ in
                 '';
               };
 
-              environmentFile = lib.mkOption {
+              tokenFile = lib.mkOption {
                 type = lib.types.nullOr lib.types.str;
                 default = null;
+                example = "/run/agenix/ghorg-github-token";
                 description = ''
-                  Optional environment file sourced by this job wrapper before
-                  invoking ghorg. This is the intended place for token-related
-                  GHORG_* variables.
+                  Optional token file path appended as `--token` for this job.
+                  Use this for per-provider secrets when a single shared
+                  `environmentFile` is not appropriate.
                 '';
               };
 
@@ -349,6 +349,10 @@ in
         message = "services.ghorg.dataDirMode must be a four-digit octal mode string such as 0750.";
       }
       {
+        assertion = cfg.environmentFile == null || lib.hasPrefix "/" cfg.environmentFile;
+        message = "services.ghorg.environmentFile must be null or an absolute path.";
+      }
+      {
         assertion = cfg.jobs != { };
         message = "services.ghorg.jobs must define at least one job.";
       }
@@ -360,12 +364,16 @@ in
           message = "services.ghorg.jobs.${name}.args must not be empty.";
         }
         {
+          assertion = lib.head job.args == "clone";
+          message = "services.ghorg.jobs.${name}.args must begin with `clone` for ghorg reclone.";
+        }
+        {
           assertion = job.configFile == null || lib.hasPrefix "/" job.configFile;
           message = "services.ghorg.jobs.${name}.configFile must be null or an absolute path.";
         }
         {
-          assertion = job.environmentFile == null || lib.hasPrefix "/" job.environmentFile;
-          message = "services.ghorg.jobs.${name}.environmentFile must be null or an absolute path.";
+          assertion = job.tokenFile == null || lib.hasPrefix "/" job.tokenFile;
+          message = "services.ghorg.jobs.${name}.tokenFile must be null or an absolute path.";
         }
         {
           assertion = job.settings.cloneToPath == null || lib.hasPrefix "/" job.settings.cloneToPath;
@@ -400,6 +408,7 @@ in
       after = [ "network-online.target" ];
       wants = [ "network-online.target" ];
       path = [
+        cfg.package
         pkgs.git
         pkgs.openssh
       ];
@@ -412,6 +421,7 @@ in
           "HOME=${cfg.dataDir}"
           "GHORG_RECLONE_PATH=${recloneConfig}"
         ];
+        EnvironmentFile = lib.optional (cfg.environmentFile != null) cfg.environmentFile;
         ExecStart = lib.escapeShellArgs [
           (lib.getExe cfg.package)
           "reclone"
