@@ -96,7 +96,10 @@ let
     lib.mapAttrs (
       name: job:
       {
-        cmd = toString (jobCommand name job);
+        cmd = lib.escapeShellArgs [
+          pkgs.runtimeShell
+          (jobCommand name job)
+        ];
       }
       // lib.optionalAttrs (job.description != null) { description = job.description; }
       // lib.optionalAttrs (job.postExecScript != null) {
