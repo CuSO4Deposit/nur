@@ -32,32 +32,34 @@ let
     job:
     let
       typedSettings =
-        lib.optionalAttrs (job.settings.scmType != null) { scm_type = job.settings.scmType; }
-        // lib.optionalAttrs (job.settings.cloneType != null) { clone_type = job.settings.cloneType; }
+        lib.optionalAttrs (job.settings.scmType != null) { GHORG_SCM_TYPE = job.settings.scmType; }
+        // lib.optionalAttrs (job.settings.cloneType != null) { GHORG_CLONE_TYPE = job.settings.cloneType; }
         // lib.optionalAttrs (job.settings.sshHostname != null) {
-          ssh_hostname = job.settings.sshHostname;
+          GHORG_SSH_HOSTNAME = job.settings.sshHostname;
         }
         // lib.optionalAttrs (job.settings.baseUrl != null) {
-          scm_base_url = job.settings.baseUrl;
+          GHORG_SCM_BASE_URL = job.settings.baseUrl;
         }
         // lib.optionalAttrs (job.settings.cloneProtocol != null) {
-          clone_protocol = job.settings.cloneProtocol;
+          GHORG_CLONE_PROTOCOL = job.settings.cloneProtocol;
         }
-        // lib.optionalAttrs (job.settings.outputDir != null) { output_dir = job.settings.outputDir; }
-        // lib.optionalAttrs (job.settings.concurrency != null) { concurrency = job.settings.concurrency; }
+        // lib.optionalAttrs (job.settings.outputDir != null) { GHORG_OUTPUT_DIR = job.settings.outputDir; }
+        // lib.optionalAttrs (job.settings.concurrency != null) {
+          GHORG_CONCURRENCY = job.settings.concurrency;
+        }
         // lib.optionalAttrs (job.settings.preserveScmHostname != null) {
-          preserve_scm_hostname = job.settings.preserveScmHostname;
+          GHORG_PRESERVE_SCM_HOSTNAME = job.settings.preserveScmHostname;
         }
         // lib.optionalAttrs (job.settings.preserveDir != null) {
-          preserve_directory_structure = job.settings.preserveDir;
+          GHORG_PRESERVE_DIRECTORY_STRUCTURE = job.settings.preserveDir;
         }
         // lib.optionalAttrs (job.settings.skipArchived != null) {
-          skip_archived = job.settings.skipArchived;
+          GHORG_SKIP_ARCHIVED = job.settings.skipArchived;
         }
-        // lib.optionalAttrs (job.settings.skipForks != null) { skip_forks = job.settings.skipForks; }
-        // lib.optionalAttrs (job.settings.branch != null) { branch = job.settings.branch; }
+        // lib.optionalAttrs (job.settings.skipForks != null) { GHORG_SKIP_FORKS = job.settings.skipForks; }
+        // lib.optionalAttrs (job.settings.branch != null) { GHORG_BRANCH = job.settings.branch; }
         // {
-          absolute_path_to_clone_to =
+          GHORG_ABSOLUTE_PATH_TO_CLONE_TO =
             if job.settings.cloneToPath != null then job.settings.cloneToPath else cfg.dataDir;
         };
     in
@@ -371,12 +373,12 @@ in
                 type = lib.types.attrsOf lib.types.anything;
                 default = { };
                 example = {
-                  bitbucket_server = true;
+                  GHORG_BITBUCKET_SERVER = true;
                 };
                 description = ''
                   Additional ghorg config keys written directly into the
-                  generated `conf.yaml`. This layer overrides keys produced from
-                  `settings`.
+                  generated `conf.yaml`. Use upstream `GHORG_*` key names here.
+                  This layer overrides keys produced from `settings`.
                 '';
               };
             };
