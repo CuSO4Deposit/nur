@@ -14,6 +14,7 @@ let
     job.rawSettings != { }
     || builtins.any (value: value != null) [
       job.settings.scmType
+      job.settings.cloneType
       job.settings.sshHostname
       job.settings.baseUrl
       job.settings.cloneProtocol
@@ -32,6 +33,7 @@ let
     let
       typedSettings =
         lib.optionalAttrs (job.settings.scmType != null) { scm_type = job.settings.scmType; }
+        // lib.optionalAttrs (job.settings.cloneType != null) { clone_type = job.settings.cloneType; }
         // lib.optionalAttrs (job.settings.sshHostname != null) {
           ssh_hostname = job.settings.sshHostname;
         }
@@ -236,79 +238,131 @@ in
                   type = lib.types.nullOr lib.types.str;
                   default = null;
                   example = "github";
-                  description = "Maps to `scm_type` in `conf.yaml`.";
+                  description = ''
+                    Which provider to clone from, for example `github`,
+                    `gitlab`, `gitea`, or `bitbucket`. This corresponds to the
+                    `--scm` flag and defaults to `github` in ghorg.
+                  '';
+                };
+
+                cloneType = lib.mkOption {
+                  type = lib.types.nullOr lib.types.str;
+                  default = null;
+                  example = "user";
+                  description = ''
+                    Type of entity to clone, typically `user` or `org`. This
+                    corresponds to `--clone-type` and is important for targets
+                    like GitHub users, which otherwise default to org mode.
+                  '';
                 };
 
                 sshHostname = lib.mkOption {
                   type = lib.types.nullOr lib.types.str;
                   default = null;
                   example = "github.com";
-                  description = "Maps to `ssh_hostname` in `conf.yaml`.";
+                  description = ''
+                    Override the SSH hostname used in clone URLs. This is useful
+                    when your `~/.ssh/config` defines aliases for the same SCM
+                    provider. It only applies when `cloneProtocol = "ssh"`.
+                  '';
                 };
 
                 baseUrl = lib.mkOption {
                   type = lib.types.nullOr lib.types.str;
                   default = null;
                   example = "https://gitlab.example.com";
-                  description = "Maps to `scm_base_url` in `conf.yaml`.";
+                  description = ''
+                    Override the SCM API base URL. This is intended for
+                    self-hosted SCM instances such as self-hosted GitLab or
+                    Gitea.
+                  '';
                 };
 
                 cloneProtocol = lib.mkOption {
                   type = lib.types.nullOr lib.types.str;
                   default = null;
                   example = "ssh";
-                  description = "Maps to `clone_protocol` in `conf.yaml`.";
+                  description = ''
+                    Which protocol ghorg should use for clone URLs. ghorg
+                    supports `https` or `ssh` and defaults to `https`.
+                  '';
                 };
 
                 outputDir = lib.mkOption {
                   type = lib.types.nullOr lib.types.str;
                   default = null;
                   example = "github";
-                  description = "Maps to `output_dir` in `conf.yaml`.";
+                  description = ''
+                    Subdirectory created under `cloneToPath`. ghorg clones into
+                    `absolute_path_to_clone_to/output_dir/repo`; by default it
+                    uses the org or user name you are cloning.
+                  '';
                 };
 
                 concurrency = lib.mkOption {
                   type = lib.types.nullOr lib.types.ints.positive;
                   default = null;
-                  description = "Maps to `concurrency` in `conf.yaml`.";
+                  description = ''
+                    Maximum number of goroutines ghorg uses while cloning. The
+                    upstream default is `25`.
+                  '';
                 };
 
                 preserveScmHostname = lib.mkOption {
                   type = lib.types.nullOr lib.types.bool;
                   default = null;
-                  description = "Maps to `preserve_scm_hostname` in `conf.yaml`.";
+                  description = ''
+                    Append the SCM hostname to `cloneToPath` so clones are
+                    organized by provider host, for example
+                    `/data/ghorg/github.com/...`.
+                  '';
                 };
 
                 preserveDir = lib.mkOption {
                   type = lib.types.nullOr lib.types.bool;
                   default = null;
-                  description = "Maps to `preserve_directory_structure` in `conf.yaml`.";
+                  description = ''
+                    Preserve provider-specific directory structure instead of
+                    flattening everything under one output directory. For GitLab
+                    this keeps namespace paths such as `group/subgroup/repo`.
+                  '';
                 };
 
                 skipArchived = lib.mkOption {
                   type = lib.types.nullOr lib.types.bool;
                   default = null;
-                  description = "Maps to `skip_archived` in `conf.yaml`.";
+                  description = ''
+                    Skip archived repositories. Upstream notes this currently
+                    applies to GitHub, GitLab, and Gitea.
+                  '';
                 };
 
                 skipForks = lib.mkOption {
                   type = lib.types.nullOr lib.types.bool;
                   default = null;
-                  description = "Maps to `skip_forks` in `conf.yaml`.";
+                  description = ''
+                    Skip repositories that are forks. Upstream notes this
+                    currently applies to GitHub, GitLab, and Gitea.
+                  '';
                 };
 
                 branch = lib.mkOption {
                   type = lib.types.nullOr lib.types.str;
                   default = null;
-                  description = "Maps to `branch` in `conf.yaml`.";
+                  description = ''
+                    Branch ghorg resets to and leaves checked out after sync.
+                    When unset, ghorg uses the repository default branch and
+                    falls back to `master` if no default branch is found.
+                  '';
                 };
 
                 cloneToPath = lib.mkOption {
                   type = lib.types.nullOr lib.types.str;
                   default = null;
                   description = ''
-                    Maps to `absolute_path_to_clone_to` in `conf.yaml`. Defaults
-                    to the service `dataDir`.
+                    Absolute path where ghorg creates its clone directory tree.
+                    Shell expansions do not work. When unset, this module uses
+                    the service `dataDir`.
                   '';
                 };
               };
