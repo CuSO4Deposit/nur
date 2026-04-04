@@ -10,13 +10,15 @@
       forAllSystems = nixpkgs.lib.genAttrs nixpkgs.lib.systems.flakeExposed;
     in
     {
+      nixosModules = import ./modules;
+
       checks = forAllSystems (system: {
         inherit inputs;
         pre-commit-check = inputs.pre-commit-hooks.lib.${system}.run {
           src = ./.;
           hooks = {
             markdownlint.enable = true;
-            nixfmt-rfc-style.enable = true;
+            nixfmt.enable = true;
           };
         };
       });
