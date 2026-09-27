@@ -18,6 +18,7 @@
 
   example-package = pkgs.callPackage ./pkgs/example-package { };
   racket-language-server = pkgs.callPackage ./pkgs/racket-language-server { };
+  scrcpy-connect = pkgs.callPackage ./pkgs/scrcpy-connect { };
   # some-qt5-package = pkgs.libsForQt5.callPackage ./pkgs/some-qt5-package { };
   # ...
 }
