@@ -13,7 +13,6 @@
       nixosModules = import ./modules;
 
       checks = forAllSystems (system: {
-        inherit inputs;
         pre-commit-check = inputs.pre-commit-hooks.lib.${system}.run {
           src = ./.;
           hooks = {
