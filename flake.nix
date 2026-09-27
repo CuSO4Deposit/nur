@@ -33,6 +33,15 @@
             inherit (self.checks.${system}.pre-commit-check) shellHook;
             buildInputs = self.checks.${system}.pre-commit-check.enabledPackages;
           };
+
+          scrcpy = pkgs.mkShellNoCC {
+            packages = with pkgs; [
+              android-tools
+              scrcpy
+              gawk
+              self.packages.${system}.scrcpy-connect
+            ];
+          };
         }
       );
 
