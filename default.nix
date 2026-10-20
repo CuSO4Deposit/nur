@@ -17,6 +17,7 @@
   overlays = import ./overlays; # nixpkgs overlays
 
   example-package = pkgs.callPackage ./pkgs/example-package { };
+  ncm-cli = pkgs.callPackage ./pkgs/ncm-cli { };
   racket-language-server = pkgs.callPackage ./pkgs/racket-language-server { };
   scrcpy-connect = pkgs.callPackage ./pkgs/scrcpy-connect { };
   # some-qt5-package = pkgs.libsForQt5.callPackage ./pkgs/some-qt5-package { };
